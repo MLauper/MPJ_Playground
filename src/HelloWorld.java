@@ -1,7 +1,11 @@
 import mpi.MPI;
 
 
-// Run with C:\code\src\github.com\MLauper\MPJ_Playground\out\production\MPJ_Playground>"C:\mpj\bin\mpjrun.bat" -np 12 HelloWorld
+// Run with
+//          cd D:\code\src\github.com\MLauper\MPJ_Playground\out\production\MPJ_Playground
+//          D:
+//          "c:\mpj\bin\mpjrun.bat" -np 12 HelloWorld
+// WARNING: Do not forget to set MPJ_HOME environment variable.
 
 public class HelloWorld {
 
