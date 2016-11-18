@@ -1,73 +1,98 @@
 package github.mlauper;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 
 public class Pancake {
-    private LinkedList<Integer> pancakes;
-    private LinkedList<LinkedList<Integer>> candidatePancakes = new LinkedList<>();
-    private LinkedList<LinkedList<Integer>> failedPancakes = new LinkedList<>();
 
-    public Pancake(LinkedList<Integer> pancakes){
-        this.pancakes = pancakes;
+    private int[] pancakes;
+    private int[] candidatePancakes = new int[0];
+    private int[] failedPancakes = new int[0];
+    private Boolean debug = false;
+    private int pancakeSize;
+
+    public Pancake(int[] pancakeOrder){
+        if(pancakeOrder[0] != 0) {
+            this.pancakes = new int[pancakeOrder.length+1];
+            this.pancakes[0] = 0;
+            System.arraycopy(pancakeOrder, 0, this.pancakes, 1, pancakeOrder.length);
+        }else {
+            this.pancakes = pancakeOrder;
+        }
+
+        this.pancakeSize = this.pancakes.length;
     }
 
     public void printPancakes (){
-        System.out.println(pancakes);
+        System.out.println(Arrays.toString(pancakes));
     }
 
-    public void calculateFlips () {
-        while(!this.isPancakeOrdered()){
-            failedPancakes.add((LinkedList<Integer>) pancakes.clone());
-            for (LinkedList<Integer> pancakeCandidate :
-                    this.getChildStates()) {
-                if(!candidatePancakes.contains(pancakeCandidate) && !failedPancakes.contains(pancakeCandidate)){
-                    candidatePancakes.add(pancakeCandidate);
-                }
-            }
-
-            this.pancakes = candidatePancakes.pop();
-        }
-    }
-
+    //public void calculateFlips () {
+    //    while(!this.isPancakeOrdered()){
+    //        failedPancakes.add((LinkedList<Integer>) pancakes.clone());
+    //        for (LinkedList<Integer> pancakeCandidate :
+    //                this.getChildStates()) {
+    //            if(!candidatePancakes.contains(pancakeCandidate) && !failedPancakes.contains(pancakeCandidate)){
+    //                candidatePancakes.add(pancakeCandidate);
+    //            }
+    //        }
+//
+    //        this.pancakes = candidatePancakes.pop();
+    //    }
+    //}
+//
     public boolean isPancakeOrdered(){
-        int size = pancakes.size();
+        int size = pancakes.length;
         for (int i = 0; i < size-1; i++) {
-            if (pancakes.get(i) + 1 != pancakes.get(i + 1)){
+            if (pancakes[i] + 1 != pancakes[i+1]){
                 return false;
             }
         }
         return true;
     }
 
+    public int[] flipped(int Position){
+        int[] flippedPancakes = new int[this.pancakeSize];
+
+        System.arraycopy(this.pancakes, 0, flippedPancakes, 0, Position);
+
+        for (int i = Position; i < pancakeSize; i++){
+            flippedPancakes[i] = this.pancakes[pancakeSize - i];
+        }
+
+        return flippedPancakes;
+    }
+
     public void flip(int Position){
-        pancakes = this.fliped(Position);
+        this.pancakes = this.flipped(Position);
     }
 
-    public LinkedList<Integer> fliped(int Position){
-        LinkedList<Integer> flipedPancakes = (LinkedList<Integer>) pancakes.clone();
-        LinkedList<Integer> temp = new LinkedList<>();
-        int j = 0;
-        for (int i = Position; i < flipedPancakes.size(); i++){
-            temp.add(j,flipedPancakes.get(i));
-            j++;
-        }
-        j = Position;
-        for (int i = temp.size()-1; i >= 0; i--){
-            flipedPancakes.set(j, temp.get(i));
-            j++;
-        }
-        return flipedPancakes;
-    }
-
-    public LinkedList<Integer> getPancakes(){
+    public int[] getPancakes(){
         return pancakes;
     }
 
-    public LinkedList<LinkedList<Integer>> getChildStates() {
-        LinkedList<LinkedList<Integer>> childStates = new LinkedList<>();
-        for (int i = 1; i < pancakes.size()-1; i++) {
-            childStates.add(new LinkedList<>(this.fliped(i)));
+    public int[][] getChildStates() {
+        // Reserve space for the maximum number of children
+        int[][] childStates = new int[this.pancakeSize][this.pancakeSize];
+
+        for (int i = 1; i < this.pancakeSize; i++) {
+            childStates[i] = this.flipped(i+1);
         }
         return childStates;
+    }
+
+    public int getHeuristic() {
+        int heuristicNumber = 0;
+        int x,y;
+
+        for (int i = 1; i < this.pancakeSize; i++){
+            x = pancakes[i-1];
+            y = pancakes[i];
+            if (x + 1 != y && x - 1 != y){
+                heuristicNumber += 1;
+            }
+        }
+
+        return heuristicNumber;
     }
 }
