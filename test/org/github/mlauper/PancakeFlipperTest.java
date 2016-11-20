@@ -1,15 +1,16 @@
 package org.github.mlauper;
 
-import github.mlauper.PancakeFlipper;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 public class PancakeFlipperTest extends TestCase {
+
     public PancakeFlipperTest( String testName )
     {
         super( testName );
@@ -59,6 +60,13 @@ public class PancakeFlipperTest extends TestCase {
         pancakeFlipper.solveSequencial();
     }
 
+    public void testWithDeterministicPancakeOrderSize20(){
+        int[] pancakeOrder = new int[]{19, 13, 10, 16, 7, 14, 11, 12, 9, 4, 3, 1, 2, 20, 18, 5, 6, 17, 8, 15};
+
+        PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
+        pancakeFlipper.solveSequencial();
+    }
+
     public void testWithRandomPancakeOrderSize30(){
         int[] pancakeOrder = generateRandomPancakeOrder(30);
 
@@ -78,6 +86,13 @@ public class PancakeFlipperTest extends TestCase {
 
         PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
         pancakeFlipper.solveSequencial();
+    }
+
+    public void testWithRandomPancakeOrderSize40Parallel(){
+        int[] pancakeOrder = generateRandomPancakeOrder(40);
+
+        PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
+        pancakeFlipper.solveParallel();
     }
 
     public void testWithDeterministicPancakeOrderSize44(){
@@ -106,6 +121,13 @@ public class PancakeFlipperTest extends TestCase {
 
         PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
         pancakeFlipper.solveSequencial();
+    }
+
+    public void testWithDeterministicPancakeOrderSize45Parallel(){
+        int[] pancakeOrder = new int[]{7, 25, 15, 2, 9, 34, 24, 19, 18, 16, 17, 10, 40, 39, 1, 41, 45, 30, 21, 11, 43, 22, 28, 27, 31, 4, 8, 20, 23, 12, 42, 26, 5, 6, 13, 29, 3, 33, 44, 35, 14, 32, 38, 37, 36};
+
+        PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
+        pancakeFlipper.solveParallel();
     }
 
     public void testWithRandomPancakeOrderSize50(){
@@ -142,6 +164,21 @@ public class PancakeFlipperTest extends TestCase {
 
         PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
         pancakeFlipper.solveSequencial();
+    }
+
+    public void testWithDeterministicPancakeOrderSize70(){
+        int[] pancakeOrder = new int[]{47, 57, 5, 59, 18, 38, 7, 27, 61, 32, 55, 22, 28, 23, 51, 37, 17, 43, 63, 67, 53, 45, 8, 54, 12, 35, 2, 15, 29, 41, 50, 16, 39, 69, 70, 19, 20, 36, 60, 62, 4, 42, 24, 40, 46, 14, 25, 56, 65, 66, 52, 10, 31, 3, 6, 68, 34, 49, 48, 33, 21, 64, 11, 9, 1, 44, 26, 13, 30, 58};
+
+        PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
+        pancakeFlipper.solveSequencial();
+    }
+
+    public void testStackSplitExecutesWithoutError(){
+        int[] pancakeOrder = generateRandomPancakeOrder(70);
+
+        PancakeFlipper pancakeFlipper = new PancakeFlipper(pancakeOrder);
+
+        pancakeFlipper.splitStateStack(2);
     }
 
 

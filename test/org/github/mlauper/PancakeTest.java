@@ -5,9 +5,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 
 public class PancakeTest extends TestCase {
     public PancakeTest( String testName )
