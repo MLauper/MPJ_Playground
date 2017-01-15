@@ -5,9 +5,9 @@ import java.io.Serializable;
 import java.util.*;
 
 
-public class PancakeFlipperSequential implements Serializable {
+public class PancakeFlipperSequentialV2 implements Serializable {
 
-    public Stack<State> stateStack = new Stack<>();
+    public ArrayDeque<State> stateStack = new ArrayDeque<State>();
 
     // Describes a candidate for the new search limit
     public int candidateLimit = Integer.MAX_VALUE;
@@ -94,7 +94,7 @@ public class PancakeFlipperSequential implements Serializable {
 
     }
 
-    public PancakeFlipperSequential(int[] pancakeOrder) {
+    public PancakeFlipperSequentialV2(int[] pancakeOrder) {
         int[] augmentedPancakeOrder = new int[pancakeOrder.length + 1];
 
         System.arraycopy(pancakeOrder, 0, augmentedPancakeOrder, 0, pancakeOrder.length);
@@ -200,7 +200,7 @@ public class PancakeFlipperSequential implements Serializable {
             time: 5.907583366 sec
          */
 
-        PancakeFlipperSequential pancakeFlipperSequential = new PancakeFlipperSequential(initialPancakeOrder);
+        PancakeFlipperSequentialV2 pancakeFlipperSequential = new PancakeFlipperSequentialV2(initialPancakeOrder);
 
         pancakeFlipperSequential.solveSequencial();
 

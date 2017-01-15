@@ -53,11 +53,23 @@ public class PancakeFlipper implements Serializable {
                     // We can calculate the heuristic number based on the flip we are going to do
                     // This removes the need to loop through the entire array again
                     if (Math.abs(pancakeOrder[i] - pancakeOrder[0]) > 1) {
-                        unexploredChilds.push(new State(this.flippedPancakeOrder(i), this.depth + 1, i, this.heuristicNumber));
+                        // We do not add child if we would reach our limit anyway
+                        // If we would step over the limit, we will step exactly one over the limit
+                        // There is no need to calculate the heuristic explicitly
+                        //if (this.heuristicNumber + this.depth+1 < limit){
+                            unexploredChilds.push(new State(this.flippedPancakeOrder(i), this.depth + 1, i, this.heuristicNumber));
+                        //} else {
+                        //    if (limit == 0) {break;}
+                        //    candidateLimit = limit + 1;
+                        //    System.out.printf("Test global limit against: %d // limit: %d // currentCandidateLimit: %d\n", limit + 1, limit, candidateLimit);
+                        //}
                     } else {
+                        // If the heuristic is being improved, there is no need to check if the limit is reached,
+                        // otherwise we wouldn't have reached the node in the first place
                         unexploredChilds.push(new State(this.flippedPancakeOrder(i), this.depth + 1, i, this.heuristicNumber - 1));
                     }
                 }
+                // this.heuristicNumber-1 + this.depth+1
             }
         }
 
@@ -93,10 +105,12 @@ public class PancakeFlipper implements Serializable {
         augmentedPancakeOrder[pancakeOrder.length] = pancakeOrder.length + 1;
 
         stateStack.push(new State(augmentedPancakeOrder, 0, 0));
-        stateStack.peek().exploreChildNodes();
-
         // Initially set heuristic number as limit
         limit = stateStack.peek().heuristicNumber;
+
+        System.out.println("Before Child Exploration");
+        stateStack.peek().exploreChildNodes();
+        System.out.println("After Child Exploration");
     }
 
     public PancakeFlipper(int[] pancakeOrder, int limit) {
@@ -108,6 +122,7 @@ public class PancakeFlipper implements Serializable {
         stateStack.push(new State(augmentedPancakeOrder, 0, 0));
         stateStack.peek().exploreChildNodes();
 
+        System.out.printf("External limit is set to: %d\n", limit);
         this.limit = limit;
     }
     public PancakeFlipper(){
@@ -174,7 +189,7 @@ public class PancakeFlipper implements Serializable {
     }
 
     // Run with
-    //          cd C:\code\src\github.com\MLauper\MPJ_Playground\target\classes\github\mlauper
+    //          cd C:\code\src\github.com\MLauper\MPJ_Playground\target\classes\
     //          "c:\mpj\bin\mpjrun.bat" -np 12 org.github.mlauper.PancakeFlipper
     // WARNING: Do not forget to set MPJ_HOME environment variable.
 
@@ -197,26 +212,60 @@ public class PancakeFlipper implements Serializable {
         int RANK0 = 0;
         int RANK1 = 1;
 
+        //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11};
+        //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15};
+
         //int[] initialPancakeOrder = new int[]{19, 13, 10, 16, 7, 14, 11, 12, 9, 4, 3, 1, 2, 20, 18, 5, 6, 17, 8, 15};
         //int[] initialPancakeOrder = new int[]{13, 36, 38, 34, 5, 28, 16, 1, 4, 3, 33, 31, 24, 14, 21, 9, 18, 26, 8, 20, 17, 35, 7, 40, 19, 6, 23, 30, 11, 29, 27, 10, 25, 39, 22, 12, 15, 2, 37, 32};
         //int[] initialPancakeOrder = new int[]{7, 25, 15, 2, 9, 34, 24, 19, 18, 16, 17, 10, 40, 39, 1, 41, 45, 30, 21, 11, 43, 22, 28, 27, 31, 4, 8, 20, 23, 12, 42, 26, 5, 6, 13, 29, 3, 33, 44, 35, 14, 32, 38, 37, 36};
         //int[] initialPancakeOrder = new int[]{1, 40, 16, 32, 27, 14, 46, 19, 2, 35, 7, 38, 10, 44, 43, 36, 47, 17, 29, 23, 50, 39, 48, 37, 49, 33, 30, 34, 41, 15, 20, 28, 5, 22, 3, 12, 18, 31, 4, 6, 45, 13, 26, 11, 42, 21, 9, 24, 25, 8};
-        int[] initialPancakeOrder = new int[]{25, 38, 52, 50, 3, 40, 11, 6, 36, 1, 47, 41, 7, 54, 49, 55, 15, 22, 16, 45, 48, 60, 5, 59, 10, 34, 56, 32, 2, 23, 29, 39, 20, 53, 43, 14, 58, 21, 9, 46, 12, 28, 24, 30, 44, 8, 4, 27, 37, 57, 18, 51, 26, 42, 31, 13, 19, 35, 17, 33};
+        //int[] initialPancakeOrder = new int[]{25, 38, 52, 50, 3, 40, 11, 6, 36, 1, 47, 41, 7, 54, 49, 55, 15, 22, 16, 45, 48, 60, 5, 59, 10, 34, 56, 32, 2, 23, 29, 39, 20, 53, 43, 14, 58, 21, 9, 46, 12, 28, 24, 30, 44, 8, 4, 27, 37, 57, 18, 51, 26, 42, 31, 13, 19, 35, 17, 33};
         //int[] initialPancakeOrder = new int[]{47, 57, 5, 59, 18, 38, 7, 27, 61, 32, 55, 22, 28, 23, 51, 37, 17, 43, 63, 67, 53, 45, 8, 54, 12, 35, 2, 15, 29, 41, 50, 16, 39, 69, 70, 19, 20, 36, 60, 62, 4, 42, 24, 40, 46, 14, 25, 56, 65, 66, 52, 10, 31, 3, 6, 68, 34, 49, 48, 33, 21, 64, 11, 9, 1, 44, 26, 13, 30, 58};
+
+        //int[] initialPancakeOrder = PancakeFlipper.generateRandomPancakeOrder(60);
+
+        /* Reference Solution 1: */
+        int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
+        /*
+            state 0: 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 15
+            state 1: 4, 1, 2| 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 15
+            state 2: 6, 3, 2, 1, 4| 5, 8, 7, 10, 9, 12, 11, 14, 13, 15
+            state 3: 8, 5, 4, 1, 2, 3, 6| 7, 10, 9, 12, 11, 14, 13, 15
+            state 4: 10, 7, 6, 3, 2, 1, 4, 5, 8| 9, 12, 11, 14, 13, 15
+            state 5: 12, 9, 8, 5, 4, 1, 2, 3, 6, 7, 10| 11, 14, 13, 15
+            state 6: 14, 11, 10, 7, 6, 3, 2, 1, 4, 5, 8, 9, 12| 13, 15
+            state 7: 13, 12, 9, 8, 5, 4, 1, 2, 3, 6, 7, 10, 11, 14| 15
+            state 8: 11, 10, 7, 6, 3, 2, 1, 4, 5, 8, 9, 12, 13| 14, 15
+            state 9: 9, 8, 5, 4, 1, 2, 3, 6, 7, 10, 11| 12, 13, 14, 15
+            state 10: 7, 6, 3, 2, 1, 4, 5, 8, 9| 10, 11, 12, 13, 14, 15
+            state 11: 5, 4, 1, 2, 3, 6, 7| 8, 9, 10, 11, 12, 13, 14, 15
+            state 12: 3, 2, 1, 4, 5| 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+            state 13: 1, 2, 3| 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+            time: 0.234752767 sec
+        */
+
+        /* Reference Solution 2: */
+        //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15};
+        /*
+            451 Solutions
+            state 0: 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17
+            time: 5.907583366 sec
+         */
+
+
         int N = initialPancakeOrder.length;
 
         if (rank == 0) {
+
             long startTime, endTime;
             startTime = System.nanoTime();
 
-            System.out.println("Control Thread (Rank 0) started");
+            System.out.println("Pancake Flipper started");
 
-            System.out.println("Build initial search tree as seed...");
+            //System.out.println("Build initial search tree as seed...");
             PancakeFlipper pancakeFlipper = new PancakeFlipper(initialPancakeOrder);
-            pancakeFlipper.searchSolution(51);
-
-            System.out.println("Initial seed state:");
-            pancakeFlipper.printData();
+            System.out.printf("Initial Limit: %d\n", pancakeFlipper.limit);
+            pancakeFlipper.searchSolution(5);
 
             // Send each Rank a part of the current search tree
             Object[] sendArr = new Object[3];
@@ -225,6 +274,7 @@ public class PancakeFlipper implements Serializable {
             Stack<State>[] splittedStateStacks = pancakeFlipper.splitStateStack(numOfRanks-2);
             for (int i = 1; i < numOfRanks-1; i++){
                 sendArr[0] = splittedStateStacks[i-1];
+                System.out.printf("Sending work with limit: %d\n", pancakeFlipper.limit);
                 MPI.COMM_WORLD.Send(sendArr, 0, 3, MPI.OBJECT, i, TAGS.INITIAL_SEED);
             }
             sendArr[0] = pancakeFlipper.stateStack;
@@ -236,12 +286,14 @@ public class PancakeFlipper implements Serializable {
             Request solutionRequest;
             Object[] recvArrSolution = new Object[1];
             solutionRequest = MPI.COMM_WORLD.Irecv(recvArrSolution, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, TAGS.SOLUTION_FOUND);
+
             // Start listening for an INCREASE_LIMIT request
             Request[] increaseLimitRequests = new Request[numOfRanks-1];
             int[] increaseLimitValue = new int[numOfRanks-1];
             for (int i = 1; i < numOfRanks; i++){
                 increaseLimitRequests[i-1] = MPI.COMM_WORLD.Irecv(increaseLimitValue, i-1, 1, MPI.INT, i, TAGS.NEW_LIMIT);
             }
+
             // Start listening for an UNBLOCK request
             Request[] unblockRequests = new Request[numOfRanks-1];
             boolean[] unblockRequestsValue = new boolean[numOfRanks-1];
@@ -255,14 +307,17 @@ public class PancakeFlipper implements Serializable {
             Queue<Request> splitStackRequests = new LinkedList<>();
             Integer workerToSplitFrom = 0;
             while(solutionRequest.Test() == null){
+
                 // Test all increase limit requests and note a global request limit
                 for (int i = 1; i < numOfRanks; i++){
                     if(increaseLimitRequests[i-1].Test() != null){
-                        System.out.printf("Received request for new work from worker %d\n", i);
+                        //System.out.printf("Received request for new work from worker %d\n", i);
                         freeWorker.add(i);
+                        //System.out.printf("Received proposed max: %d\n", increaseLimitValue[i-1]);
+                        //System.out.println(Arrays.toString(increaseLimitValue));
                         globalCandidateLimit = increaseLimitValue[i-1] < globalCandidateLimit ? increaseLimitValue[i-1] : globalCandidateLimit;
                         increaseLimitValue[i-1] = 0;
-                        System.out.printf("Listen again for New Limit Requests from %d\n", i);
+                        //System.out.printf("Listen again for New Limit Requests from %d\n", i);
                         increaseLimitRequests[i-1] = MPI.COMM_WORLD.Irecv(increaseLimitValue, i-1, 1, MPI.INT, i, TAGS.NEW_LIMIT);
                     }
                 }
@@ -281,7 +336,7 @@ public class PancakeFlipper implements Serializable {
 
                     int[] sendBuf = new int[1];
                     sendBuf[0] = worker;
-                    System.out.printf("Trying to send work from %d to %d\n", workerToSplitFrom, worker);
+                    //System.out.printf("Trying to send work from %d to %d\n", workerToSplitFrom, worker);
                     splitStackRequests.add(MPI.COMM_WORLD.Isend(sendBuf, 0, 1, MPI.INT, workerToSplitFrom, TAGS.REQUEST_SPLIT));
                     waitingWorker.add(worker);
                 }
@@ -290,7 +345,7 @@ public class PancakeFlipper implements Serializable {
                 // Check for workers that are no longer waiting
                 for (int i = 1; i < numOfRanks; i++){
                     if(unblockRequests[i-1].Test() != null){
-                        System.out.printf("Removing worker %d from waiting workers...\n",i);
+                        //System.out.printf("Removing worker %d from waiting workers...\n",i);
                         waitingWorker.remove(i);
                         unblockRequests[i-1] = MPI.COMM_WORLD.Irecv(unblockRequestsValue, i-1, 1, MPI.BOOLEAN, i, TAGS.UNBLOCKED);
                     }
@@ -298,14 +353,12 @@ public class PancakeFlipper implements Serializable {
 
                 // As soon as all worker are blocked, increase limit and restart search
                 if(waitingWorker.size() == numOfRanks-1){
-                    System.out.println("All workers waiting...");
-                    for(Request request : splitStackRequests){
-                        request.Cancel();
-                    }
+                    //System.out.println("All workers waiting...");
                     pancakeFlipper = new PancakeFlipper(initialPancakeOrder, globalCandidateLimit);
-                    System.out.println("calculating seed tree...");
-                    pancakeFlipper.searchSolution(51);
-                    System.out.println("Finished calculating seed tree...");
+                    System.out.printf("Increase Limit: %d\n", globalCandidateLimit);
+                    //System.out.println("calculating seed tree...");
+                    pancakeFlipper.searchSolution(5);
+                    //System.out.println("Finished calculating seed tree...");
                     globalCandidateLimit = Integer.MAX_VALUE;
 
                     sendArr = new Object[3];
@@ -314,26 +367,35 @@ public class PancakeFlipper implements Serializable {
                     splittedStateStacks = pancakeFlipper.splitStateStack(numOfRanks-2);
                     for (int i = 1; i < numOfRanks-1; i++){
                         sendArr[0] = splittedStateStacks[i-1];
-                        System.out.printf("Sending part to rank %d\n",i);
+                        //System.out.printf("Sending part to rank %d\n",i);
+                        System.out.printf("Sending work with limit: %d\n", pancakeFlipper.limit);
                         MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, i, TAGS.INITIAL_SEED);
                     }
                     sendArr[0] = pancakeFlipper.stateStack;
                     MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, numOfRanks-1, TAGS.INITIAL_SEED);
 
-                    System.out.println("New seeds were sent...");
+                    //System.out.println("New seeds were sent...");
 
                     waitingWorker = new LinkedList<>();
                 }
 
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
-            System.out.println("--------------------ALL GOOD THINGS COME TO AN END -------------------------");
+            //System.out.println("--------------------ALL GOOD THINGS COME TO AN END -------------------------");
 
             pancakeFlipper.stateStack = (Stack<State>)recvArrSolution[0];
-            pancakeFlipper.printSolution();
+            //TODO: Enable solution printing
+            //pancakeFlipper.printSolution();
 
             endTime = System.nanoTime();
-            System.out.printf("=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\nSolved in %dms\n=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\n\n", (endTime-startTime)/1000/1000);
+            System.out.printf("=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\nSolved a problem of size %d\n", N);
+            System.out.printf("Solved in %d steps\n",pancakeFlipper.stateStack.size());
+            System.out.printf("Solved in %dms\n=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\n\n", (endTime-startTime)/1000/1000);
 
             for (int i = 1; i < numOfRanks; i++) {
                 int[] sendBuf = new int[1];
@@ -343,7 +405,7 @@ public class PancakeFlipper implements Serializable {
             System.exit(0);
         }
         else {
-            System.out.printf("Worker Thread (Rank %d) started\n", rank);
+            //System.out.printf("Worker Thread (Rank %d) started\n", rank);
 
             PancakeFlipper pancakeFlipper = new PancakeFlipper();
 
@@ -353,8 +415,8 @@ public class PancakeFlipper implements Serializable {
             pancakeFlipper.limit = (int)recvArr[1];
             pancakeFlipper.candidateLimit = (int)recvArr[2];
 
-            System.out.printf("Received stack is currently %d in size\n", pancakeFlipper.stateStack.size());
-            pancakeFlipper.printData();
+            //System.out.printf("Received stack is currently %d in size\n", pancakeFlipper.stateStack.size());
+            //pancakeFlipper.printData();
 
             pancakeFlipper.solveParallel();
         }
@@ -420,28 +482,30 @@ public class PancakeFlipper implements Serializable {
                 // Solution with current limit not available in current path, try going back
                 // Record new candidate limit
                 stateLimit = stateStack.peek().depth + stateStack.peek().heuristicNumber;
+                //System.out.printf("Having Candidate: %d", stateLimit);
                 candidateLimit = stateLimit < candidateLimit ? stateLimit : candidateLimit;
                 stateStack.pop();
             } else if (stateStack.peek().unexploredChilds.empty()) {
                 if (stateStack.peek().depth == 0) {
-                    System.out.printf("CRITICAL IN with current limit %d\n", this.limit);
+                    //System.out.printf("CRITICAL IN with current limit %d\n", this.limit);
                     // At root node, propose new search limit to control node and receive new work
                     int[] sendArr = new int[1];
                     sendArr[0] = candidateLimit;
+                    System.out.printf("Proposing Limit: %d\n",sendArr[0]);
 
-                    System.out.println("Sending to rank0 . . .");
-                    MPI.COMM_WORLD.Isend(sendArr,0,1,MPI.INT,0,TAGS.NEW_LIMIT);
-
+                    //System.out.println("Sending to rank0 . . .");
                     Object[] recvArr = new Object[3];
-
                     Request initialSeedReceiveRequest = MPI.COMM_WORLD.Irecv(recvArr, 0, 3, MPI.OBJECT, MPI.ANY_SOURCE, TAGS.INITIAL_SEED);
+
+                    MPI.COMM_WORLD.Isend(sendArr,0,1,MPI.INT,0,TAGS.NEW_LIMIT);
 
                     int i = 0;
                     while(initialSeedReceiveRequest.Test() == null){
                         i++;
-                        System.out.printf("Waiting for new seed... I'm Rank %d\n", MPI.COMM_WORLD.Rank());
+                        //System.out.printf("Waiting for new seed... I'm Rank %d\n", MPI.COMM_WORLD.Rank());
 
                         if (i >= 2){
+                            System.out.println("Rerequesting work...");
                             MPI.COMM_WORLD.Isend(sendArr,0,1,MPI.INT,0,TAGS.NEW_LIMIT);
                         }
 
@@ -460,7 +524,7 @@ public class PancakeFlipper implements Serializable {
                     this.stateStack = (Stack<State>)recvArr[0];
                     this.limit = (int)recvArr[1];
                     this.candidateLimit = (int)recvArr[2];
-                    System.out.println("CRITICAL OUT");
+                    //System.out.println("CRITICAL OUT");
                 } else {
                     // No more paths to go, go up
                     stateStack.pop();
@@ -485,7 +549,7 @@ public class PancakeFlipper implements Serializable {
             if (terminateRequest.Test() != null) {
                 MPI.Finalize();
             }
-            System.out.printf("Still looking for a solution, rank %d\n", MPI.COMM_WORLD.Rank());
+            //System.out.printf("Still looking for a solution, rank %d\n", MPI.COMM_WORLD.Rank());
             // Check if split to other worker should be done
             if (splitRequest.Test() != null) {
                 Object[] sendArr = new Object[3];
@@ -493,6 +557,7 @@ public class PancakeFlipper implements Serializable {
                 sendArr[2] = (Object) this.candidateLimit;
                 sendArr[0] = (Object) this.splitStateStack(1)[0];
 
+                System.out.printf("Sending work from other worker with limit %d\n", this.limit);
                 MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, splitTo[0], TAGS.INITIAL_SEED);
                 // Restart listening to split requests
                 splitRequest = MPI.COMM_WORLD.Irecv(splitTo, 0, 1, MPI.INT, MPI.ANY_SOURCE, TAGS.REQUEST_SPLIT);
@@ -507,4 +572,18 @@ public class PancakeFlipper implements Serializable {
     }
 
 
+    public static int[] generateRandomPancakeOrder(int size){
+        int[] pancakeOrder = new int[size];
+
+        List<Integer> pancakeOrderList = new LinkedList<>();
+        for (int i = 1; i <= pancakeOrder.length; i++){
+            pancakeOrderList.add(i);
+        }
+        Collections.shuffle(pancakeOrderList);
+        for (int i = 0; i < pancakeOrder.length; i++){
+            pancakeOrder[i] = pancakeOrderList.get(i);
+        }
+
+        return pancakeOrder;
+    }
 }

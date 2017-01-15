@@ -1,7 +1,6 @@
 package org.github.mlauper;
 
 import mpi.MPI;
-import mpi.Request;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -10,11 +9,14 @@ import java.util.*;
 
 public class PancakeFlipperParallel implements Serializable {
 
-    public Stack<State> stateStack = new Stack<>();
+    public ArrayDeque<State> stateStack = new ArrayDeque<State>();
 
     // Describes a candidate for the new search limit
     public int candidateLimit = Integer.MAX_VALUE;
     int limit;
+    int stateLimit;
+
+    int rank;
 
     public class State implements Serializable {
         public int[] pancakeOrder;
@@ -107,30 +109,12 @@ public class PancakeFlipperParallel implements Serializable {
         // Initially set heuristic number as limit
         limit = stateStack.peek().heuristicNumber;
 
-        System.out.println("Before Child Exploration");
         stateStack.peek().exploreChildNodes();
-        System.out.println("After Child Exploration");
     }
 
-    public PancakeFlipperParallel(int[] pancakeOrder, int limit) {
-        int[] augmentedPancakeOrder = new int[pancakeOrder.length + 1];
+    public void solveSequential(){
 
-        System.arraycopy(pancakeOrder, 0, augmentedPancakeOrder, 0, pancakeOrder.length);
-        augmentedPancakeOrder[pancakeOrder.length] = pancakeOrder.length + 1;
-
-        stateStack.push(new State(augmentedPancakeOrder, 0, 0));
-        stateStack.peek().exploreChildNodes();
-
-        System.out.printf("External limit is set to: %d\n", limit);
-        this.limit = limit;
-    }
-    public PancakeFlipperParallel(){
-
-    }
-
-    public void solveSequencial(){
-        int stateLimit;
-
+        long startTime = System.nanoTime();
         // Search until heuristicNumber is 0, which means that a solution was found
         while (stateStack.peek().heuristicNumber != 0) {
 
@@ -145,7 +129,6 @@ public class PancakeFlipperParallel implements Serializable {
                 if (stateStack.peek().depth == 0){
                     // At root node, increase limit and explore children again
                     limit = candidateLimit;
-                    System.out.printf("New Limit: %d\n",limit);
                     candidateLimit = Integer.MAX_VALUE;
                     stateStack.peek().exploreChildNodes();
                 } else {
@@ -157,59 +140,17 @@ public class PancakeFlipperParallel implements Serializable {
                 this.stateStack.push(this.stateStack.peek().unexploredChilds.pop());
                 stateStack.peek().exploreChildNodes();
             }
+
         }
+        long endTime = System.nanoTime();
 
         this.printSolution();
+        System.out.printf("Run required %d ms", (endTime-startTime)/1000/1000);
     }
 
-    private void printSolution() {
-        System.out.printf("Found Solution in %d moves, in reverse Order:\n", stateStack.size()-1);
-        while(!this.stateStack.isEmpty()){
-            State state = this.stateStack.pop();
-            System.out.print(Arrays.toString(state.pancakeOrder));
-            System.out.printf(", heuristic number: %d\n",state.heuristicNumber);
-            if(state.flipFromParent != 0) {
-                System.out.printf("From flip %d on ", state.flipFromParent);
-            }
-        }
-    }
 
-    private void printData(){
-        System.out.println("=========================================");
-        System.out.printf("Printing PacakeFlipper Data:\n");
-        System.out.printf("Candidate Limit: %d\n", this.candidateLimit);
-        System.out.printf("Current Limit: %d\n", this.limit);
-        System.out.printf("StateStack Size: %d\n", this.stateStack.size());
-        System.out.printf("Current depth: %d\n", this.stateStack.peek().depth);
-        System.out.printf("Current heuristic number: %d\n", this.stateStack.peek().heuristicNumber);
-        System.out.printf("Current pancake order: %s\n", Arrays.toString(this.stateStack.peek().pancakeOrder));
-        System.out.printf("Current number of unexplored childs childs: %d\n", this.stateStack.peek().unexploredChilds.size());
-        System.out.println("=========================================");
-    }
-
-    // Run with
-    //          cd C:\code\src\github.com\MLauper\MPJ_Playground\target\classes\
-    //          "c:\mpj\bin\mpjrun.bat" -np 12 org.github.mlauper.PancakeFlipper
-    // WARNING: Do not forget to set MPJ_HOME environment variable.
-
-    static class TAGS {
-        public static final int INITIAL_SEED = 0;
-        public static final int NEW_LIMIT = 1;
-        public static final int REQUEST_SPLIT = 2;
-        public static final int UNBLOCKED = 3;
-        public static final int TERMINATE = 4;
-        public static final int SOLUTION_FOUND = 99;
-    }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-
-
-
-        MPI.Init(args);
-        int rank = MPI.COMM_WORLD.Rank();
-        int numOfRanks = MPI.COMM_WORLD.Size();
-        int RANK0 = 0;
-        int RANK1 = 1;
 
         //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11};
         //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15};
@@ -223,8 +164,10 @@ public class PancakeFlipperParallel implements Serializable {
 
         //int[] initialPancakeOrder = PancakeFlipper.generateRandomPancakeOrder(60);
 
+
+
         /* Reference Solution 1: */
-        int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
+        //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
         /*
             state 0: 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 15
             state 1: 4, 1, 2| 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 15
@@ -244,286 +187,57 @@ public class PancakeFlipperParallel implements Serializable {
         */
 
         /* Reference Solution 2: */
-        //int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15};
+        int[] initialPancakeOrder = new int[]{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15};
         /*
             451 Solutions
             state 0: 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17
             time: 5.907583366 sec
          */
 
+        PancakeFlipperParallel pancakeFlipper = new PancakeFlipperParallel(initialPancakeOrder);
 
+        MPI.Init(args);
+        pancakeFlipper.rank = MPI.COMM_WORLD.Rank();
+        int numOfRanks = MPI.COMM_WORLD.Size();
         int N = initialPancakeOrder.length;
 
-        if (rank == 0) {
-
-            long startTime, endTime;
-            startTime = System.nanoTime();
-
-            System.out.println("Pancake Flipper started");
-
-            //System.out.println("Build initial search tree as seed...");
-            PancakeFlipperParallel pancakeFlipper = new PancakeFlipperParallel(initialPancakeOrder);
-            System.out.printf("Initial Limit: %d\n", pancakeFlipper.limit);
-            pancakeFlipper.searchSolution(5);
-
-            // Send each Rank a part of the current search tree
-            Object[] sendArr = new Object[3];
-            sendArr[1] = (Object) pancakeFlipper.limit;
-            sendArr[2] = (Object) pancakeFlipper.candidateLimit;
-            Stack<State>[] splittedStateStacks = pancakeFlipper.splitStateStack(numOfRanks-2);
-            for (int i = 1; i < numOfRanks-1; i++){
-                sendArr[0] = splittedStateStacks[i-1];
-                System.out.printf("Sending work with limit: %d\n", pancakeFlipper.limit);
-                MPI.COMM_WORLD.Send(sendArr, 0, 3, MPI.OBJECT, i, TAGS.INITIAL_SEED);
-            }
-            sendArr[0] = pancakeFlipper.stateStack;
-            MPI.COMM_WORLD.Send(sendArr, 0, 3, MPI.OBJECT, numOfRanks-1, TAGS.INITIAL_SEED);
-
-            // Reserve space for two tags; SOLUTION_FOUND and INCREASE_LIMIT
-            Request[] requests = new Request[3];
-            // Start listening for a solution
-            Request solutionRequest;
-            Object[] recvArrSolution = new Object[1];
-            solutionRequest = MPI.COMM_WORLD.Irecv(recvArrSolution, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, TAGS.SOLUTION_FOUND);
-
-            // Start listening for an INCREASE_LIMIT request
-            Request[] increaseLimitRequests = new Request[numOfRanks-1];
-            int[] increaseLimitValue = new int[numOfRanks-1];
-            for (int i = 1; i < numOfRanks; i++){
-                increaseLimitRequests[i-1] = MPI.COMM_WORLD.Irecv(increaseLimitValue, i-1, 1, MPI.INT, i, TAGS.NEW_LIMIT);
-            }
-
-            // Start listening for an UNBLOCK request
-            Request[] unblockRequests = new Request[numOfRanks-1];
-            boolean[] unblockRequestsValue = new boolean[numOfRanks-1];
-            for (int i = 1; i < numOfRanks; i++){
-                unblockRequests[i-1] = MPI.COMM_WORLD.Irecv(unblockRequestsValue, i-1, 1, MPI.BOOLEAN, i, TAGS.UNBLOCKED);
-            }
-
-            int globalCandidateLimit = Integer.MAX_VALUE;
-            Queue<Integer> freeWorker = new LinkedList<>();
-            Queue<Integer> waitingWorker = new LinkedList<>();
-            Queue<Request> splitStackRequests = new LinkedList<>();
-            Integer workerToSplitFrom = 0;
-            while(solutionRequest.Test() == null){
-
-                // Test all increase limit requests and note a global request limit
-                for (int i = 1; i < numOfRanks; i++){
-                    if(increaseLimitRequests[i-1].Test() != null){
-                        //System.out.printf("Received request for new work from worker %d\n", i);
-                        freeWorker.add(i);
-                        //System.out.printf("Received proposed max: %d\n", increaseLimitValue[i-1]);
-                        //System.out.println(Arrays.toString(increaseLimitValue));
-                        globalCandidateLimit = increaseLimitValue[i-1] < globalCandidateLimit ? increaseLimitValue[i-1] : globalCandidateLimit;
-                        increaseLimitValue[i-1] = 0;
-                        //System.out.printf("Listen again for New Limit Requests from %d\n", i);
-                        increaseLimitRequests[i-1] = MPI.COMM_WORLD.Irecv(increaseLimitValue, i-1, 1, MPI.INT, i, TAGS.NEW_LIMIT);
-                    }
-                }
-
-                // For each free worker, request a split from another worker
-                for (Integer worker : freeWorker) {
-                    // select good source
-                    for (int i = 1; i < numOfRanks; i++){
-                        workerToSplitFrom++;
-                        workerToSplitFrom = workerToSplitFrom % numOfRanks;
-                        if (workerToSplitFrom == 0) workerToSplitFrom += 1;
-                        if (!freeWorker.contains(workerToSplitFrom) && !waitingWorker.contains(workerToSplitFrom) && workerToSplitFrom != worker){
-                            break;
-                        }
-                    }
-
-                    int[] sendBuf = new int[1];
-                    sendBuf[0] = worker;
-                    //System.out.printf("Trying to send work from %d to %d\n", workerToSplitFrom, worker);
-                    splitStackRequests.add(MPI.COMM_WORLD.Isend(sendBuf, 0, 1, MPI.INT, workerToSplitFrom, TAGS.REQUEST_SPLIT));
-                    waitingWorker.add(worker);
-                }
-                freeWorker = new LinkedList<>();
-
-                // Check for workers that are no longer waiting
-                for (int i = 1; i < numOfRanks; i++){
-                    if(unblockRequests[i-1].Test() != null){
-                        //System.out.printf("Removing worker %d from waiting workers...\n",i);
-                        waitingWorker.remove(i);
-                        unblockRequests[i-1] = MPI.COMM_WORLD.Irecv(unblockRequestsValue, i-1, 1, MPI.BOOLEAN, i, TAGS.UNBLOCKED);
-                    }
-                }
-
-                // As soon as all worker are blocked, increase limit and restart search
-                if(waitingWorker.size() == numOfRanks-1){
-                    //System.out.println("All workers waiting...");
-                    pancakeFlipper = new PancakeFlipperParallel(initialPancakeOrder, globalCandidateLimit);
-                    System.out.printf("Increase Limit: %d\n", globalCandidateLimit);
-                    //System.out.println("calculating seed tree...");
-                    pancakeFlipper.searchSolution(5);
-                    //System.out.println("Finished calculating seed tree...");
-                    globalCandidateLimit = Integer.MAX_VALUE;
-
-                    sendArr = new Object[3];
-                    sendArr[1] = (Object) pancakeFlipper.limit;
-                    sendArr[2] = (Object) pancakeFlipper.candidateLimit;
-                    splittedStateStacks = pancakeFlipper.splitStateStack(numOfRanks-2);
-                    for (int i = 1; i < numOfRanks-1; i++){
-                        sendArr[0] = splittedStateStacks[i-1];
-                        //System.out.printf("Sending part to rank %d\n",i);
-                        System.out.printf("Sending work with limit: %d\n", pancakeFlipper.limit);
-                        MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, i, TAGS.INITIAL_SEED);
-                    }
-                    sendArr[0] = pancakeFlipper.stateStack;
-                    MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, numOfRanks-1, TAGS.INITIAL_SEED);
-
-                    //System.out.println("New seeds were sent...");
-
-                    waitingWorker = new LinkedList<>();
-                }
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            //System.out.println("--------------------ALL GOOD THINGS COME TO AN END -------------------------");
-
-            pancakeFlipper.stateStack = (Stack<State>)recvArrSolution[0];
-            //TODO: Enable solution printing
-            //pancakeFlipper.printSolution();
-
-            endTime = System.nanoTime();
-            System.out.printf("=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\nSolved a problem of size %d\n", N);
-            System.out.printf("Solved in %d steps\n",pancakeFlipper.stateStack.size());
-            System.out.printf("Solved in %dms\n=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~\n\n", (endTime-startTime)/1000/1000);
-
-            for (int i = 1; i < numOfRanks; i++) {
-                int[] sendBuf = new int[1];
-                MPI.COMM_WORLD.Isend(sendBuf, 0, 1, MPI.INT, i, TAGS.TERMINATE);
-            }
-
-            System.exit(0);
-        }
-        else {
-            //System.out.printf("Worker Thread (Rank %d) started\n", rank);
-
-            PancakeFlipperParallel pancakeFlipper = new PancakeFlipperParallel();
-
-            Object[] recvArr = new Object[3];
-            MPI.COMM_WORLD.Recv(recvArr, 0, 3, MPI.OBJECT, MPI.ANY_SOURCE, TAGS.INITIAL_SEED);
-            pancakeFlipper.stateStack = (Stack<State>)recvArr[0];
-            pancakeFlipper.limit = (int)recvArr[1];
-            pancakeFlipper.candidateLimit = (int)recvArr[2];
-
-            //System.out.printf("Received stack is currently %d in size\n", pancakeFlipper.stateStack.size());
-            //pancakeFlipper.printData();
-
+        if (pancakeFlipper.rank == 0) {
+            // Start Control Rank logic
+            pancakeFlipper.startControlRank();
+        } else {
             pancakeFlipper.solveParallel();
         }
 
-        MPI.Finalize();
     }
 
-    public Stack<State>[] splitStateStack(int numberOfReturnedStacks){
-        Stack<State> tempStateStack = new Stack<>();
-        Stack<State> localStateStack = new Stack<>();
-        Stack<State> returnStateStack[] = new Stack[numberOfReturnedStacks];
+    private void startControlRank() {
+        long startTime = System.nanoTime();
+            this.printCurrentState();
+            this.buidInitialSearchStack();
+            this.printCurrentState();
+        long endTime = System.nanoTime();
 
-        // Initialize return stacks
-        for (int i = 0; i < numberOfReturnedStacks; i++){
-            returnStateStack[i] = new Stack<State>();
-        }
-
-        // Flip current state stack over
-        while(!this.stateStack.isEmpty()){
-            tempStateStack.push(stateStack.pop());
-        }
-
-        // Duplicate base element to return state stack and local state stack
-        // and move half of the elements to return state stack
-        while(!tempStateStack.isEmpty()){
-            State tempState = tempStateStack.pop();
-
-            localStateStack.push(new State(tempState.pancakeOrder,tempState.depth,tempState.flipFromParent,tempState.heuristicNumber));
-            for (int i = 0; i < numberOfReturnedStacks; i++){
-                returnStateStack[i].push(new State(tempState.pancakeOrder,tempState.depth,tempState.flipFromParent,tempState.heuristicNumber));
-            }
-
-            // Split all available unexplored childs across all return stacks
-            int i = 0;
-            Stack<State> pushStack = localStateStack;
-            while (!tempState.unexploredChilds.isEmpty()){
-                pushStack.peek().unexploredChilds.push(tempState.unexploredChilds.pop());
-
-                if (i < numberOfReturnedStacks){
-                    pushStack = returnStateStack[i];
-                    i++;
-                } else {
-                    pushStack = localStateStack;
-                    i = 0;
-                }
-            }
-        }
-
-        this.stateStack = localStateStack;
-        return returnStateStack;
+        this.printSolution();
+        System.out.printf("Run required %d ms", (endTime-startTime)/1000/1000);
     }
 
-    public void searchSolution(int numberOfTries) {
+    private void buidInitialSearchStack() {
 
-        int stateLimit;
-
-        // Search until heuristicNumber is 0, which means that a solution was found
-        while (stateStack.peek().heuristicNumber != 0 && numberOfTries > 0) {
-            numberOfTries--;
-
+        int numberOfInitialSearches = 100;
+        while (stateStack.peek().heuristicNumber != 0 && numberOfInitialSearches >= 0) {
             // Check if limit is reached
-            if ((stateStack.peek().heuristicNumber + stateStack.peek().depth) > limit) {
+            if ((stateStack.peek().heuristicNumber + stateStack.peek().depth) > limit){
                 // Solution with current limit not available in current path, try going back
                 // Record new candidate limit
                 stateLimit = stateStack.peek().depth + stateStack.peek().heuristicNumber;
-                //System.out.printf("Having Candidate: %d", stateLimit);
                 candidateLimit = stateLimit < candidateLimit ? stateLimit : candidateLimit;
                 stateStack.pop();
             } else if (stateStack.peek().unexploredChilds.empty()) {
-                if (stateStack.peek().depth == 0) {
-                    //System.out.printf("CRITICAL IN with current limit %d\n", this.limit);
-                    // At root node, propose new search limit to control node and receive new work
-                    int[] sendArr = new int[1];
-                    sendArr[0] = candidateLimit;
-                    System.out.printf("Proposing Limit: %d\n",sendArr[0]);
-
-                    //System.out.println("Sending to rank0 . . .");
-                    Object[] recvArr = new Object[3];
-                    Request initialSeedReceiveRequest = MPI.COMM_WORLD.Irecv(recvArr, 0, 3, MPI.OBJECT, MPI.ANY_SOURCE, TAGS.INITIAL_SEED);
-
-                    MPI.COMM_WORLD.Isend(sendArr,0,1,MPI.INT,0, TAGS.NEW_LIMIT);
-
-                    int i = 0;
-                    while(initialSeedReceiveRequest.Test() == null){
-                        i++;
-                        //System.out.printf("Waiting for new seed... I'm Rank %d\n", MPI.COMM_WORLD.Rank());
-
-                        if (i >= 2){
-                            System.out.println("Rerequesting work...");
-                            MPI.COMM_WORLD.Isend(sendArr,0,1,MPI.INT,0, TAGS.NEW_LIMIT);
-                        }
-
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-
-                    }
-
-                    boolean[] sendBool = new boolean[1];
-                    sendBool[0] = true;
-                    MPI.COMM_WORLD.Isend(sendBool, 0, 1, MPI.BOOLEAN, 0, TAGS.UNBLOCKED);
-                    this.stateStack = (Stack<State>)recvArr[0];
-                    this.limit = (int)recvArr[1];
-                    this.candidateLimit = (int)recvArr[2];
-                    //System.out.println("CRITICAL OUT");
+                if (stateStack.peek().depth == 0){
+                    // At root node, increase limit and explore children again
+                    limit = candidateLimit;
+                    candidateLimit = Integer.MAX_VALUE;
+                    stateStack.peek().exploreChildNodes();
                 } else {
                     // No more paths to go, go up
                     stateStack.pop();
@@ -533,43 +247,60 @@ public class PancakeFlipperParallel implements Serializable {
                 this.stateStack.push(this.stateStack.peek().unexploredChilds.pop());
                 stateStack.peek().exploreChildNodes();
             }
+            numberOfInitialSearches -= 1;
+
         }
 
     }
 
-    public void solveParallel(){
+    private void solveParallel() {
 
-        int[] splitTo = new int[1];
-        Request splitRequest = MPI.COMM_WORLD.Irecv(splitTo, 0, 1, MPI.INT, MPI.ANY_SOURCE, TAGS.REQUEST_SPLIT);
-        int[] recvBuf = new int[1];
-        Request terminateRequest = MPI.COMM_WORLD.Irecv(recvBuf, 0, 1, MPI.INT, MPI.ANY_SOURCE, TAGS.TERMINATE);
-
-        while (stateStack.peek().heuristicNumber != 0) {
-            if (terminateRequest.Test() != null) {
-                MPI.Finalize();
-            }
-            //System.out.printf("Still looking for a solution, rank %d\n", MPI.COMM_WORLD.Rank());
-            // Check if split to other worker should be done
-            if (splitRequest.Test() != null) {
-                Object[] sendArr = new Object[3];
-                sendArr[1] = (Object) this.limit;
-                sendArr[2] = (Object) this.candidateLimit;
-                sendArr[0] = (Object) this.splitStateStack(1)[0];
-
-                System.out.printf("Sending work from other worker with limit %d\n", this.limit);
-                MPI.COMM_WORLD.Isend(sendArr, 0, 3, MPI.OBJECT, splitTo[0], TAGS.INITIAL_SEED);
-                // Restart listening to split requests
-                splitRequest = MPI.COMM_WORLD.Irecv(splitTo, 0, 1, MPI.INT, MPI.ANY_SOURCE, TAGS.REQUEST_SPLIT);
-            }
-
-            this.searchSolution(100000);
-        }
-
-        Object[] sendArr = new Object[1];
-        sendArr[0] = (Object) stateStack;
-        MPI.COMM_WORLD.Send(sendArr, 0, 1, MPI.OBJECT, 0, TAGS.SOLUTION_FOUND);
     }
 
+    public ArrayDeque<State>[] splitStateStack(int numberOfReturnedStacks){
+        ArrayDeque<State> tempStateStack = new ArrayDeque<>();
+        ArrayDeque<State> localStateStack = new ArrayDeque<>();
+        ArrayDeque[] returnStateStackArray = new ArrayDeque[numberOfReturnedStacks];
+
+        // Initialize return stacks
+        for (int i = 0; i < numberOfReturnedStacks; i++){
+            returnStateStackArray[i] = new ArrayDeque<>();
+        }
+
+        // Flip current state stack over
+        while(!this.stateStack.isEmpty()){
+            tempStateStack.push(stateStack.pop());
+        }
+
+        // Duplicate base element to return state stack and local state stack
+        // and distribute child elements fair across all returned state stacks
+        while(!tempStateStack.isEmpty()){
+            State tempState = tempStateStack.pop();
+
+            localStateStack.push(new State(tempState.pancakeOrder,tempState.depth,tempState.flipFromParent,tempState.heuristicNumber));
+            for (int i = 0; i < numberOfReturnedStacks; i++){
+                returnStateStackArray[i].push(new State(tempState.pancakeOrder,tempState.depth,tempState.flipFromParent,tempState.heuristicNumber));
+            }
+
+            // Split all available unexplored childs across all return stacks
+            int i = 0;
+            ArrayDeque<State> pushStack = localStateStack;
+            while (!tempState.unexploredChilds.isEmpty()){
+                pushStack.peek().unexploredChilds.push(tempState.unexploredChilds.pop());
+
+                if (i < numberOfReturnedStacks){
+                    pushStack = returnStateStackArray[i];
+                    i++;
+                } else {
+                    pushStack = localStateStack;
+                    i = 0;
+                }
+            }
+        }
+
+        this.stateStack = localStateStack;
+        return returnStateStackArray;
+    }
 
     public static int[] generateRandomPancakeOrder(int size){
         int[] pancakeOrder = new int[size];
@@ -585,4 +316,30 @@ public class PancakeFlipperParallel implements Serializable {
 
         return pancakeOrder;
     }
+
+    private void printSolution() {
+        System.out.printf("Found Solution in %d moves, in reverse Order:\n", stateStack.size()-1);
+        while(!this.stateStack.isEmpty()){
+            State state = this.stateStack.pop();
+            System.out.print(Arrays.toString(state.pancakeOrder));
+            System.out.printf(", heuristic number: %d\n",state.heuristicNumber);
+            if(state.flipFromParent != 0) {
+                System.out.printf("From flip %d on ", state.flipFromParent);
+            }
+        }
+    }
+
+    private void printCurrentState() {
+        System.out.println("=~=~=~=~=~=~=~=~=~=~=~=~RANK " + this.rank + "=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~");
+        System.out.printf("Current Limit: " + this.limit + "\n");
+        System.out.printf("Current Candidate Limit: " + this.candidateLimit + "\n");
+        System.out.printf("Current State Stack Size: " + this.stateStack.size() + "\n");
+        System.out.printf("Top State Stack Content: ");
+        for (int element:this.stateStack.peek().pancakeOrder) {
+            System.out.printf(element + " ");
+        }
+        System.out.printf("\n");
+        System.out.println("=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~");
+    }
+
 }
