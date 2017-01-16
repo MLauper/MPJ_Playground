@@ -1,4 +1,4 @@
-package github.mlauper;
+package org.github.mlauper;
 
 import java.util.Stack;
 
